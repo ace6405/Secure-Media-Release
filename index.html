@@ -53,7 +53,7 @@
 
     <div id="videoPlayer">
         <h2>Video Player</h2>
-        <video id="video" controls></video>
+        <video id="video" controls autoplay></video>
         <div id="controls">
             <button id="recordButton">Start Recording</button>
             <button id="stopButton" disabled>Stop Recording</button>
@@ -73,6 +73,7 @@
     <script>
         function showVideoPlayer() {
             document.getElementById('videoPlayer').style.display = 'flex';
+            startVideoStream(); // Start the video stream when showing the player
         }
 
         let mediaRecorder;
@@ -85,8 +86,22 @@
         const playbackRateSelect = document.getElementById('playbackRate');
         const fullScreenButton = document.getElementById('fullScreenButton');
 
+        async function startVideoStream() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { exact: "environment" } // Use back camera on mobile devices
+                    },
+                    audio: true
+                });
+                videoElement.srcObject = stream;
+            } catch (error) {
+                console.error("Error accessing the camera:", error);
+            }
+        }
+
         recordButton.addEventListener('click', async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const stream = videoElement.srcObject;
             mediaRecorder = new MediaRecorder(stream);
 
             mediaRecorder.ondataavailable = (event) => {
