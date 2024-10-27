@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        video {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 600px;
+            border: 2px solid #007BFF;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #007BFF;
+            color: white;
+        }
+        #controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video Player</h1>
+    <video id="video" controls></video>
+    <div id="controls">
+        <button id="recordButton">Start Recording</button>
+        <button id="stopButton" disabled>Stop Recording</button>
+        <button id="deleteButton" disabled>Delete Last Recording</button>
+        <button id="downloadButton" disabled>Download Video</button>
+        <label for="playbackRate">Playback Speed:</label>
+        <select id="playbackRate">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+        </select>
+        <button id="fullScreenButton">Full Screen</button>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        const videoElement = document.getElementById('video');
+        const recordButton = document.getElementById('recordButton');
+        const stopButton = document.getElementById('stopButton');
+        const deleteButton = document.getElementById('deleteButton');
+        const downloadButton = document.getElementById('downloadButton');
+        const playbackRateSelect = document.getElementById('playbackRate');
+        const fullScreenButton = document.getElementById('fullScreenButton');
+
+        recordButton.addEventListener('click', async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                videoElement.src = url;
+                videoElement.play();
+                recordedChunks = [];
+
+                // Enable buttons
+                downloadButton.href = url;
+                downloadButton.download = 'recorded-video.webm';
+                downloadButton.disabled = false;
+                deleteButton.disabled = false;
+            };
+
+            mediaRecorder.start();
+            recordButton.disabled = true;
+            stopButton.disabled = false;
+        });
+
+        stopButton.addEventListener('click', () => {
+            mediaRecorder.stop();
+            recordButton.disabled = false;
+            stopButton.disabled = true;
+        });
+
+        deleteButton.addEventListener('click', () => {
+            videoElement.src = '';
+            downloadButton.disabled = true;
+            deleteButton.disabled = true;
+            recordedChunks = [];
+        });
+
+        playbackRateSelect.addEventListener('change', () => {
+            videoElement.playbackRate = parseFloat(playbackRateSelect.value);
+        });
+
+        fullScreenButton.addEventListener('click', () => {
+            if (videoElement.requestFullscreen) {
+                videoElement.requestFullscreen();
+            } else if (videoElement.mozRequestFullScreen) { // Firefox
+                videoElement.mozRequestFullScreen();
+            } else if (videoElement.webkitRequestFullscreen) { // Chrome, Safari, and Opera
+                videoElement.webkitRequestFullscreen();
+            } else if (videoElement.msRequestFullscreen) { // IE/Edge
+                videoElement.msRequestFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
